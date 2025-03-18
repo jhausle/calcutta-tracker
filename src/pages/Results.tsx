@@ -13,12 +13,14 @@ interface Game {
     college: string;
     region: string;
     region_seed: number;
+    owner: string | null;
   };
   team2: {
     id: string;
     college: string;
     region: string;
     region_seed: number;
+    owner: string | null;
   };
   winner_id: string | null;
   game_date: string | null;
@@ -125,13 +127,19 @@ function Results() {
               id,
               college,
               region,
-              region_seed
+              region_seed,
+              owner:owner_id (
+                name
+              )
             ),
             team2:team2_id (
               id,
               college,
               region,
-              region_seed
+              region_seed,
+              owner:owner_id (
+                name
+              )
             ),
             winner_id,
             game_date
@@ -147,8 +155,20 @@ function Results() {
             id: selectedRound,
             name: rounds.find(r => r.id === selectedRound)?.name || ''
           },
-          team1: game.team1,
-          team2: game.team2,
+          team1: {
+            id: game.team1.id,
+            college: game.team1.college,
+            region: game.team1.region,
+            region_seed: game.team1.region_seed,
+            owner: game.team1.owner?.name || null
+          },
+          team2: {
+            id: game.team2.id,
+            college: game.team2.college,
+            region: game.team2.region,
+            region_seed: game.team2.region_seed,
+            owner: game.team2.owner?.name || null
+          },
           winner_id: game.winner_id,
           game_date: game.game_date
         }));
@@ -240,6 +260,9 @@ function Results() {
                       <span className="text-sm font-semibold">#{game.team1.region_seed}</span>
                     </div>
                     <h3 className="text-xl font-bold mt-2">{game.team1.college}</h3>
+                    {game.team1.owner && (
+                      <p className="text-sm text-gray-600 mt-1">Owner: {game.team1.owner}</p>
+                    )}
                     {game.winner_id === game.team1.id && (
                       <div className="flex items-center justify-center space-x-2 mt-4 text-green-600">
                         <Trophy size={20} />
@@ -270,6 +293,9 @@ function Results() {
                       <span className="text-sm font-semibold">#{game.team2.region_seed}</span>
                     </div>
                     <h3 className="text-xl font-bold mt-2">{game.team2.college}</h3>
+                    {game.team2.owner && (
+                      <p className="text-sm text-gray-600 mt-1">Owner: {game.team2.owner}</p>
+                    )}
                     {game.winner_id === game.team2.id && (
                       <div className="flex items-center justify-center space-x-2 mt-4 text-green-600">
                         <Trophy size={20} />
