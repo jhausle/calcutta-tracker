@@ -90,7 +90,19 @@ function Games() {
             .is('winner_id', null);
 
           if (error) throw error;
-          setTournamentGames(games || []);
+          const transformedGames: TournamentGame[] = games.map(game => ({
+            id: game.id,
+            team1: {
+              id: game.team1?.[0]?.id || '',
+              college: game.team1?.[0]?.college || ''
+            },
+            team2: {
+              id: game.team2?.[0]?.id || '',
+              college: game.team2?.[0]?.college || ''
+            },
+            winner_id: game.winner_id
+          }));
+          setTournamentGames(transformedGames);
         }
       } catch (err) {
         console.error('Error fetching tournament games:', err);

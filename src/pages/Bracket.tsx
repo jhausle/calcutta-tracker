@@ -42,7 +42,7 @@ interface Champion {
   college: string;
   region: string;
   region_seed: number;
-  owner?: {
+  owner: {
     name: string;
   } | null;
 }

@@ -3,8 +3,12 @@ import { User, Mail, DollarSign, Trophy, Calendar, ChevronDown, ChevronUp } from
 import { supabase } from '../lib/supabase';
 import type { Owner, TeamEarnings } from '../types';
 
-interface OwnerWithTeams extends Owner {
-  teams: TeamEarnings[];
+interface OwnerWithTeams {
+  id: string;
+  name: string;
+  email: string;
+  created_at: string;
+  teams: any[];  // Define proper type if possible
   totalPurchasePrice: number;
   totalEarnings: number;
   totalProfit: number;
@@ -91,13 +95,14 @@ function Owners() {
         const transformedOwners: OwnerWithTeams[] = (ownersWithTeams || [])
           .map(owner => {
             const teams = ownerTeams[owner.name] || [];
-            const totalPurchasePrice = teams.reduce((sum, team) => sum + (team.purchase_price || 0), 0);
-            const totalEarnings = teams.reduce((sum, team) => sum + (team.total_earnings || 0), 0);
-            const totalProfit = teams.reduce((sum, team) => sum + (team.net_profit || 0), 0);
+            const totalPurchasePrice = teams.reduce((sum: number, team: any) => sum + (team.purchase_price || 0), 0);
+            const totalEarnings = teams.reduce((sum: number, team: any) => sum + (team.total_earnings || 0), 0);
+            const totalProfit = teams.reduce((sum: number, team: any) => sum + ((team.total_earnings || 0) - (team.purchase_price || 0)), 0);
             const taxAmount = teams[0]?.owner_tax || 0;
 
             return {
               ...owner,
+              created_at: owner.created_at || new Date().toISOString(),
               teams,
               totalPurchasePrice,
               totalEarnings,
@@ -275,8 +280,8 @@ function Owners() {
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-right">
-                            <span className={`text-sm font-semibold ${(team.net_profit || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                              {formatMoney(team.net_profit)}
+                            <span className={`text-sm font-semibold ${(team.total_earnings || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                              {formatMoney(team.total_earnings)}
                             </span>
                           </td>
                         </tr>

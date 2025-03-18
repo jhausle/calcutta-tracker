@@ -439,14 +439,16 @@ function TournamentManagement() {
                   {game.team1 && (
                     <div className="flex-1 text-center">
                       <div className="flex items-center justify-center space-x-2">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          game.team1.region === 'West' ? 'bg-blue-100 text-blue-800' :
-                          game.team1.region === 'East' ? 'bg-green-100 text-green-800' :
-                          game.team1.region === 'South' ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-red-100 text-red-800'
-                        }`}>
-                          {game.team1.region}
-                        </span>
+                        {game.team1?.region && (
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            game.team1.region === 'West' ? 'bg-blue-100 text-blue-800' :
+                            game.team1.region === 'East' ? 'bg-green-100 text-green-800' :
+                            game.team1.region === 'South' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-red-100 text-red-800'
+                          }`}>
+                            {game.team1.region}
+                          </span>
+                        )}
                         <span className="text-sm font-semibold">#{game.team1.region_seed}</span>
                       </div>
                       <h3 className="text-xl font-bold mt-2">{game.team1.college}</h3>
@@ -484,14 +486,16 @@ function TournamentManagement() {
                   {game.team2 && (
                     <div className="flex-1 text-center">
                       <div className="flex items-center justify-center space-x-2">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          game.team2.region === 'West' ? 'bg-blue-100 text-blue-800' :
-                          game.team2.region === 'East' ? 'bg-green-100 text-green-800' :
-                          game.team2.region === 'South' ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-red-100 text-red-800'
-                        }`}>
-                          {game.team2.region}
-                        </span>
+                        {game.team2?.region && (
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            game.team2.region === 'West' ? 'bg-blue-100 text-blue-800' :
+                            game.team2.region === 'East' ? 'bg-green-100 text-green-800' :
+                            game.team2.region === 'South' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-red-100 text-red-800'
+                          }`}>
+                            {game.team2.region}
+                          </span>
+                        )}
                         <span className="text-sm font-semibold">#{game.team2.region_seed}</span>
                       </div>
                       <h3 className="text-xl font-bold mt-2">{game.team2.college}</h3>
