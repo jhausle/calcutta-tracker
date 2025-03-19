@@ -32,6 +32,32 @@ interface Season {
   name: string;
 }
 
+// Add interface for Supabase response
+interface SupabaseGameResponse {
+  id: string;
+  round_id: string;
+  team1: {
+    id: string;
+    college: string;
+    region: string;
+    region_seed: number;
+    owner: {
+      name: string;
+    } | null;
+  };
+  team2: {
+    id: string;
+    college: string;
+    region: string;
+    region_seed: number;
+    owner: {
+      name: string;
+    } | null;
+  };
+  winner_id: string | null;
+  game_date: string | null;
+}
+
 function Results() {
   const [rounds, setRounds] = useState<{ id: string; name: string; }[]>([]);
   const [selectedRound, setSelectedRound] = useState<string>('');
@@ -149,7 +175,7 @@ function Results() {
 
         if (gamesError) throw gamesError;
 
-        const transformedGames: Game[] = (gamesData || []).map(game => ({
+        const transformedGames: Game[] = ((gamesData || []) as unknown as SupabaseGameResponse[]).map(game => ({
           id: game.id,
           round: {
             id: selectedRound,

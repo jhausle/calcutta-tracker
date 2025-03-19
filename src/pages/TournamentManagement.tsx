@@ -22,6 +22,7 @@ interface Game {
   } | null;
   winner_id: string | null;
   game_date: string | null;
+  game_number: number | null;
 }
 
 interface Team {
@@ -35,6 +36,27 @@ interface Season {
   id: string;
   year: number;
   name: string;
+}
+
+// Update the Supabase response type
+interface SupabaseGameResponse {
+  id: string;
+  round_id: string;
+  team1: {
+    id: string;
+    college: string;
+    region: string;
+    region_seed: number;
+  } | null;
+  team2: {
+    id: string;
+    college: string;
+    region: string;
+    region_seed: number;
+  } | null;
+  winner_id: string | null;
+  game_date: string | null;
+  game_number: number | null;
 }
 
 function TournamentManagement() {
@@ -152,16 +174,27 @@ function TournamentManagement() {
 
         if (gamesError) throw gamesError;
 
-        const transformedGames: Game[] = (gamesData || []).map(game => ({
+        const transformedGames: Game[] = ((gamesData || []) as unknown as SupabaseGameResponse[]).map(game => ({
           id: game.id,
           round: {
             id: selectedRound,
             name: rounds.find(r => r.id === selectedRound)?.name || ''
           },
-          team1: game.team1,
-          team2: game.team2,
+          team1: game.team1 ? {
+            id: game.team1.id,
+            college: game.team1.college,
+            region: game.team1.region,
+            region_seed: game.team1.region_seed
+          } : null,
+          team2: game.team2 ? {
+            id: game.team2.id,
+            college: game.team2.college,
+            region: game.team2.region,
+            region_seed: game.team2.region_seed
+          } : null,
           winner_id: game.winner_id,
-          game_date: game.game_date
+          game_date: game.game_date,
+          game_number: game.game_number
         }));
 
         setGames(transformedGames);
@@ -292,16 +325,27 @@ function TournamentManagement() {
 
       if (gamesError) throw gamesError;
 
-      const transformedGames: Game[] = (gamesData || []).map(game => ({
+      const transformedGames: Game[] = ((gamesData || []) as unknown as SupabaseGameResponse[]).map(game => ({
         id: game.id,
         round: {
           id: selectedRound,
           name: rounds.find(r => r.id === selectedRound)?.name || ''
         },
-        team1: game.team1,
-        team2: game.team2,
+        team1: game.team1 ? {
+          id: game.team1.id,
+          college: game.team1.college,
+          region: game.team1.region,
+          region_seed: game.team1.region_seed
+        } : null,
+        team2: game.team2 ? {
+          id: game.team2.id,
+          college: game.team2.college,
+          region: game.team2.region,
+          region_seed: game.team2.region_seed
+        } : null,
         winner_id: game.winner_id,
-        game_date: game.game_date
+        game_date: game.game_date,
+        game_number: game.game_number
       }));
 
       setGames(transformedGames);
@@ -453,15 +497,15 @@ function TournamentManagement() {
                       </div>
                       <h3 className="text-xl font-bold mt-2">{game.team1.college}</h3>
                       <button
-                        onClick={() => handleWinnerSelection(game, game.team1.id)}
-                        disabled={saving}
+                        onClick={() => game.team1 && handleWinnerSelection(game, game.team1.id)}
+                        disabled={saving || !game.team1}
                         className={`mt-4 px-4 py-2 rounded-md transition-colors ${
-                          game.winner_id === game.team1.id
+                          game.winner_id === game.team1?.id
                             ? 'bg-green-600 text-white'
                             : 'bg-gray-100 hover:bg-gray-200 text-gray-800'
                         }`}
                       >
-                        {game.winner_id === game.team1.id ? (
+                        {game.winner_id === game.team1?.id ? (
                           <div className="flex items-center justify-center space-x-2">
                             <Trophy size={16} />
                             <span>Winner</span>
@@ -500,15 +544,15 @@ function TournamentManagement() {
                       </div>
                       <h3 className="text-xl font-bold mt-2">{game.team2.college}</h3>
                       <button
-                        onClick={() => handleWinnerSelection(game, game.team2.id)}
-                        disabled={saving}
+                        onClick={() => game.team2 && handleWinnerSelection(game, game.team2.id)}
+                        disabled={saving || !game.team2}
                         className={`mt-4 px-4 py-2 rounded-md transition-colors ${
-                          game.winner_id === game.team2.id
+                          game.winner_id === game.team2?.id
                             ? 'bg-green-600 text-white'
                             : 'bg-gray-100 hover:bg-gray-200 text-gray-800'
                         }`}
                       >
-                        {game.winner_id === game.team2.id ? (
+                        {game.winner_id === game.team2?.id ? (
                           <div className="flex items-center justify-center space-x-2">
                             <Trophy size={16} />
                             <span>Winner</span>

@@ -53,6 +53,20 @@ interface Season {
   name: string;
 }
 
+// Add interface for Supabase champion response
+interface SupabaseChampionResponse {
+  id: string;
+  champion: {
+    id: string;
+    college: string;
+    region: string;
+    region_seed: number;
+    owner: {
+      name: string;
+    } | null;
+  }[];
+}
+
 function Bracket() {
   const [regionRounds, setRegionRounds] = useState<RegionRounds[]>([]);
   const [finalRounds, setFinalRounds] = useState<BracketRound[]>([]);
@@ -109,14 +123,13 @@ function Bracket() {
         if (!season) throw new Error('Season not found');
 
         if (season.champion?.[0]) {
+          const championData = season.champion[0];
           setChampion({
-            id: season.champion[0].id,
-            college: season.champion[0].college,
-            region: season.champion[0].region,
-            region_seed: season.champion[0].region_seed,
-            owner: season.champion[0].owner ? {
-              name: season.champion[0].owner.name
-            } : null
+            id: championData.id,
+            college: championData.college,
+            region: championData.region,
+            region_seed: championData.region_seed,
+            owner: championData.owner?.[0]?.name ? { name: championData.owner[0].name } : null
           });
         }
 
