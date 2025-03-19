@@ -8,9 +8,7 @@ interface BracketTeam {
   region: string;
   region_seed: number;
   winner?: boolean;
-  owner?: {
-    name: string;
-  } | null;
+  owner: { name: string; } | null;
 }
 
 interface BracketGame {
@@ -81,13 +79,15 @@ interface SupabaseGameResponse {
     college: string;
     region: string;
     region_seed: number;
-  } | null;
+    owner: { name: string; } | null;
+  };
   team2: {
     id: string;
     college: string;
     region: string;
     region_seed: number;
-  } | null;
+    owner: { name: string; } | null;
+  };
   winner_id: string | null;
   round: {
     id: string;
@@ -205,13 +205,19 @@ function Bracket() {
               id,
               college,
               region,
-              region_seed
+              region_seed,
+              owner:owner_id (
+                name
+              )
             ),
             team2:team2_id (
               id,
               college,
               region,
-              region_seed
+              region_seed,
+              owner:owner_id (
+                name
+              )
             ),
             winner_id,
             round:round_id (
@@ -220,7 +226,7 @@ function Bracket() {
               name
             )
           `)
-          .eq('season_id', season.id) as { data: SupabaseGameResponse[] | null, error: any };
+          .eq('season_id', season.id) as unknown as { data: SupabaseGameResponse[], error: any };
 
         if (gamesError) throw gamesError;
         if (!gamesData) throw new Error('No games data received');
@@ -230,20 +236,35 @@ function Bracket() {
 
         // Add this right after getting gamesData
         console.log('Raw game example:', gamesData[0]);
+        console.log('Raw game example team1:', gamesData[0]?.team1);
+        console.log('Raw game example team1 owner:', gamesData[0]?.team1?.owner);
 
         // Sort the games after fetching
         const sortedGames = gamesData.map(game => {
-          // Get first team's region directly from team objects
-          const region = game.team1?.region || game.team2?.region;
-          
+          const team1Data = game.team1 ? {
+            id: game.team1.id,
+            college: game.team1.college,
+            region: game.team1.region,
+            region_seed: game.team1.region_seed,
+            owner: game.team1.owner ? { name: game.team1.owner.name } : null
+          } : null;
+
+          const team2Data = game.team2 ? {
+            id: game.team2.id,
+            college: game.team2.college,
+            region: game.team2.region,
+            region_seed: game.team2.region_seed,
+            owner: game.team2.owner ? { name: game.team2.owner.name } : null
+          } : null;
+
           return {
             id: game.id,
             game_number: game.game_number,
-            region: region,
-            team1: game.team1,  // Access team data directly
-            team2: game.team2,  // Access team data directly
+            region: team1Data?.region || team2Data?.region,
+            team1: team1Data,
+            team2: team2Data,
             winner_id: game.winner_id,
-            round: game.round   // Access round directly
+            round: game.round
           };
         });
 
@@ -285,18 +306,12 @@ function Bracket() {
               round_number: roundNumber
             },
             team1: game.team1 ? {
-              id: game.team1.id,
-              college: game.team1.college,
-              region: game.team1.region,
-              region_seed: game.team1.region_seed,
-              winner: game.winner_id === game.team1.id
+              ...game.team1,
+              owner: game.team1.owner ? { name: game.team1.owner.name } : null
             } : null,
             team2: game.team2 ? {
-              id: game.team2.id,
-              college: game.team2.college,
-              region: game.team2.region,
-              region_seed: game.team2.region_seed,
-              winner: game.winner_id === game.team2.id
+              ...game.team2,
+              owner: game.team2.owner ? { name: game.team2.owner.name } : null
             } : null,
             winner_id: game.winner_id,
             game_number: game.game_number
