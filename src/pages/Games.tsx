@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { format } from 'date-fns';
-import { Calendar, Trophy } from 'lucide-react';
+import { Calendar, Trophy, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Game } from '../types';
 import { supabase } from '../lib/supabase';
 
@@ -197,17 +197,41 @@ function Games() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <h2 className="text-2xl font-bold text-gray-900">Games for {format(date, 'MMMM d, yyyy')}</h2>
-        <div className="flex items-center space-x-2">
-          <Calendar size={20} className="text-gray-500" />
-          <input
-            type="date"
-            value={format(date, 'yyyy-MM-dd')}
-            onChange={(e) => {
-              const [year, month, day] = e.target.value.split('-').map(Number);
-              setDate(new Date(year, month - 1, day, 12)); // Set to noon to avoid timezone issues
+        <div className="flex items-center space-x-4">
+          <button
+            onClick={() => {
+              const newDate = new Date(date);
+              newDate.setDate(date.getDate() - 1);
+              setDate(newDate);
             }}
-            className="px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+            className="p-2 hover:bg-gray-100 rounded-full"
+          >
+            <ChevronLeft size={20} className="text-gray-500" />
+          </button>
+
+          <div className="flex items-center space-x-2">
+            <Calendar size={20} className="text-gray-500" />
+            <input
+              type="date"
+              value={format(date, 'yyyy-MM-dd')}
+              onChange={(e) => {
+                const [year, month, day] = e.target.value.split('-').map(Number);
+                setDate(new Date(year, month - 1, day, 12));
+              }}
+              className="px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <button
+            onClick={() => {
+              const newDate = new Date(date);
+              newDate.setDate(date.getDate() + 1);
+              setDate(newDate);
+            }}
+            className="p-2 hover:bg-gray-100 rounded-full"
+          >
+            <ChevronRight size={20} className="text-gray-500" />
+          </button>
         </div>
       </div>
 

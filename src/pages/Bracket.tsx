@@ -53,6 +53,49 @@ interface Season {
   name: string;
 }
 
+interface GameData {
+  id: string;
+  region: string;
+  team1: {
+    id: string;
+    college: string;
+    region_seed: number;
+  };
+  team2: {
+    id: string;
+    college: string;
+    region_seed: number;
+  };
+  winner_id: string | null;
+  round: {
+    round_number: number;
+    name: string;
+  };
+}
+
+interface SupabaseGameResponse {
+  id: string;
+  game_number: number;
+  team1: {
+    id: string;
+    college: string;
+    region: string;
+    region_seed: number;
+  } | null;
+  team2: {
+    id: string;
+    college: string;
+    region: string;
+    region_seed: number;
+  } | null;
+  winner_id: string | null;
+  round: {
+    id: string;
+    round_number: number;
+    name: string;
+  };
+}
+
 // Add interface for Supabase champion response
 interface SupabaseChampionResponse {
   id: string;
@@ -66,6 +109,26 @@ interface SupabaseChampionResponse {
     } | null;
   }[];
 }
+
+// Add this helper function to determine matchup order
+const getMatchupOrder = (seed1: number, seed2: number) => {
+  const pairs = [
+    [1, 16], // First matchup
+    [8, 9],  // Second matchup
+    [5, 12], // Third matchup
+    [4, 13], // Fourth matchup
+    [6, 11], // Fifth matchup
+    [3, 14], // Sixth matchup
+    [7, 10], // Seventh matchup
+    [2, 15]  // Eighth matchup
+  ];
+  
+  const matchupIndex = pairs.findIndex(([s1, s2]) => 
+    (seed1 === s1 && seed2 === s2) || (seed1 === s2 && seed2 === s1)
+  );
+  
+  return matchupIndex;
+};
 
 function Bracket() {
   const [regionRounds, setRegionRounds] = useState<RegionRounds[]>([]);
@@ -133,50 +196,86 @@ function Bracket() {
           });
         }
 
-        // Get all games with their teams, owners, and rounds
         const { data: gamesData, error: gamesError } = await supabase
           .from('games')
           .select(`
             id,
             game_number,
-            round:round_id (
-              id,
-              name,
-              round_number
-            ),
             team1:team1_id (
               id,
               college,
               region,
-              region_seed,
-              owner:owner_id (
-                name
-              )
+              region_seed
             ),
             team2:team2_id (
               id,
               college,
               region,
-              region_seed,
-              owner:owner_id (
-                name
-              )
+              region_seed
             ),
-            winner_id
+            winner_id,
+            round:round_id (
+              id,
+              round_number,
+              name
+            )
           `)
-          .eq('season_id', season.id)
-          .order('round(round_number)', { ascending: true })
-          .order('game_number', { ascending: true });
+          .eq('season_id', season.id) as { data: SupabaseGameResponse[] | null, error: any };
 
         if (gamesError) throw gamesError;
+        if (!gamesData) throw new Error('No games data received');
 
-        // Transform and organize the data by region and rounds
+        // After fetching games data
+        console.log('Raw games data:', gamesData);
+
+        // Add this right after getting gamesData
+        console.log('Raw game example:', gamesData[0]);
+
+        // Sort the games after fetching
+        const sortedGames = gamesData.map(game => {
+          // Get first team's region directly from team objects
+          const region = game.team1?.region || game.team2?.region;
+          
+          return {
+            id: game.id,
+            game_number: game.game_number,
+            region: region,
+            team1: game.team1,  // Access team data directly
+            team2: game.team2,  // Access team data directly
+            winner_id: game.winner_id,
+            round: game.round   // Access round directly
+          };
+        });
+
+        // Add more debug logs
+        console.log('First sorted game team1:', sortedGames[0]?.team1);
+        console.log('First sorted game region:', sortedGames[0]?.region);
+
+        // Sort the transformed games
+        sortedGames.sort((a, b) => {
+          // First sort by region, handle undefined case
+          if (a.region !== b.region) {
+            return (a.region || '').localeCompare(b.region || '');
+          }
+          
+          // Then by round number
+          if (a.round.round_number !== b.round.round_number) {
+            return a.round.round_number - b.round.round_number;
+          }
+          
+          // Finally by matchup order within the round
+          const orderA = getMatchupOrder(a.team1?.region_seed || 0, a.team2?.region_seed || 0);
+          const orderB = getMatchupOrder(b.team1?.region_seed || 0, b.team2?.region_seed || 0);
+          return orderA - orderB;
+        });
+
+        // Transform and organize the data
         const regionMap = new Map<string, Map<number, BracketRound>>();
         const finalRoundsMap = new Map<number, BracketRound>();
 
-        gamesData.forEach((game: any) => {
+        sortedGames.forEach((game) => {
           const roundNumber = game.round.round_number;
-          const region = game.team1?.region || game.team2?.region;
+          const region = game.region;
           
           const transformedGame = {
             id: game.id,
@@ -186,11 +285,17 @@ function Bracket() {
               round_number: roundNumber
             },
             team1: game.team1 ? {
-              ...game.team1,
+              id: game.team1.id,
+              college: game.team1.college,
+              region: game.team1.region,
+              region_seed: game.team1.region_seed,
               winner: game.winner_id === game.team1.id
             } : null,
             team2: game.team2 ? {
-              ...game.team2,
+              id: game.team2.id,
+              college: game.team2.college,
+              region: game.team2.region,
+              region_seed: game.team2.region_seed,
               winner: game.winner_id === game.team2.id
             } : null,
             winner_id: game.winner_id,
@@ -234,12 +339,16 @@ function Bracket() {
 
         const finals = Array.from(finalRoundsMap.values()).sort((a, b) => a.round_number - b.round_number);
 
+        // After organizing into regions
+        console.log('Regions:', regions);
+        console.log('Finals:', finals);
+
         setRegionRounds(regions);
         setFinalRounds(finals);
         setError(null);
       } catch (err) {
         console.error('Error fetching bracket:', err);
-        setError('Failed to load tournament bracket');
+        setError(err instanceof Error ? err.message : 'Failed to load bracket');
       } finally {
         setLoading(false);
       }
