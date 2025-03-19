@@ -4,8 +4,9 @@
 
 [dev]
   command = "npm run dev"
-  port = 3000
+  port = 8888
   targetPort = 5173
+  framework = "#custom"
 
 [build.environment]
   NODE_VERSION = "18"
@@ -13,4 +14,19 @@
 [[redirects]]
   from = "/*"
   to = "/index.html"
-  status = 200 
+  status = 200
+
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Content-Type = "application/javascript"
+
+[[headers]]
+  for = "/*.js"
+  [headers.values]
+    Content-Type = "application/javascript"
+
+[[headers]]
+  for = "/*.css"
+  [headers.values]
+    Content-Type = "text/css" 
