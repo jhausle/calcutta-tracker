@@ -108,8 +108,16 @@ function Bracket() {
         if (seasonError) throw seasonError;
         if (!season) throw new Error('Season not found');
 
-        if (season.champion) {
-          setChampion(season.champion);
+        if (season.champion?.[0]) {
+          setChampion({
+            id: season.champion[0].id,
+            college: season.champion[0].college,
+            region: season.champion[0].region,
+            region_seed: season.champion[0].region_seed,
+            owner: season.champion[0].owner ? {
+              name: season.champion[0].owner.name
+            } : null
+          });
         }
 
         // Get all games with their teams, owners, and rounds

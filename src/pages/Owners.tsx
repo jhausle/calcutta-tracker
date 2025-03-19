@@ -7,8 +7,7 @@ interface OwnerWithTeams {
   id: string;
   name: string;
   email: string;
-  created_at: string;
-  teams: any[];  // Define proper type if possible
+  teams: any[];
   totalPurchasePrice: number;
   totalEarnings: number;
   totalProfit: number;
@@ -102,7 +101,6 @@ function Owners() {
 
             return {
               ...owner,
-              created_at: owner.created_at || new Date().toISOString(),
               teams,
               totalPurchasePrice,
               totalEarnings,
