@@ -233,14 +233,59 @@ function TournamentManagement() {
 
     try {
       setSaving(true);
+      
+      console.log('Attempting update with:', {
+        game_id: game.id,
+        winner_team_id: winnerId
+      });
 
-      const { error: updateError } = await supabase
-        .rpc('advance_to_next_round', {
+      // First verify we can read the game
+      const { data: verifyData, error: verifyError } = await supabase
+        .from('games')
+        .select('*')
+        .eq('id', game.id)
+        .single();
+
+      console.log('Verify read:', { data: verifyData, error: verifyError });
+
+      if (verifyError) {
+        throw new Error(`Verify failed: ${verifyError.message}`);
+      }
+
+      // Try direct update with more explicit error handling
+      const { data: updateData, error: updateError } = await supabase
+        .from('games')
+        .update({ 
+          winner_id: winnerId
+        })
+        .eq('id', game.id)
+        .select()
+        .single();
+
+      console.log('Update response:', { data: updateData, error: updateError });
+
+      if (updateError) {
+        console.error('Error details:', updateError);
+        throw updateError;
+      }
+
+      if (!updateData) {
+        throw new Error('Update succeeded but no data returned');
+      }
+
+      // Advance the winner to the next round
+      const { data: advanceData, error: advanceError } = await supabase
+        .rpc('advance_winner', {
           game_id: game.id,
           winner_team_id: winnerId
         });
 
-      if (updateError) throw updateError;
+      console.log('Advance response:', { data: advanceData, error: advanceError });
+
+      if (advanceError) {
+        console.error('Advance error:', advanceError);
+        throw advanceError;
+      }
 
       // Refresh the games list to show any new games created
       fetchGames();
