@@ -12,6 +12,7 @@ interface OwnerWithTeams {
   totalEarnings: number;
   totalProfit: number;
   taxAmount: number;
+  teamsAlive: number;
 }
 
 interface Season {
@@ -37,6 +38,7 @@ function Owners() {
   const [sweetSixteenTeam, setSweetSixteenTeam] = useState<SpecialTeam | null>(null);
   const [highestScoringLoser, setHighestScoringLoser] = useState<SpecialTeam | null>(null);
   const [specialPayoutsLoading, setSpecialPayoutsLoading] = useState(true);
+  const [games, setGames] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchSeasons = async () => {
@@ -89,6 +91,30 @@ function Owners() {
 
         if (earningsError) throw earningsError;
 
+        // Fetch games to check for eliminated teams
+        const { data: gamesData, error: gamesError } = await supabase
+          .from('games')
+          .select(`
+            *,
+            seasons!inner (
+              year
+            )
+          `)
+          .eq('seasons.year', selectedYear);
+
+        if (gamesError) throw gamesError;
+
+        setGames(gamesData || []);
+
+        // Helper function to check if a team is still alive
+        const isTeamAlive = (teamId: string) => {
+          return !gamesData.some(game => 
+            (game.team1_id === teamId || game.team2_id === teamId) && 
+            game.winner_id !== null && 
+            game.winner_id !== teamId
+          );
+        };
+
         // Group team earnings by owner
         const ownerTeams = teamEarnings.reduce((acc, team) => {
           if (team.owner_name) {
@@ -106,8 +132,11 @@ function Owners() {
             const teams = ownerTeams[owner.name] || [];
             const totalPurchasePrice = teams.reduce((sum: number, team: any) => sum + (team.purchase_price || 0), 0);
             const totalEarnings = teams.reduce((sum: number, team: any) => sum + (team.total_earnings || 0), 0);
-            const totalProfit = teams.reduce((sum: number, team: any) => sum + ((team.total_earnings || 0) - (team.purchase_price || 0)), 0);
             const taxAmount = teams[0]?.owner_tax || 0;
+            const totalProfit = totalEarnings - (totalPurchasePrice + taxAmount);
+            const teamsAlive = teams.reduce((count: number, team: any) => 
+              count + (isTeamAlive(team.team_id) ? 1 : 0), 0
+            );
 
             return {
               ...owner,
@@ -115,10 +144,10 @@ function Owners() {
               totalPurchasePrice,
               totalEarnings,
               totalProfit,
-              taxAmount
+              taxAmount,
+              teamsAlive
             };
           })
-          // Filter out owners with no teams in the selected season
           .filter(owner => owner.teams.length > 0);
 
         setOwners(transformedOwners);
@@ -258,6 +287,14 @@ function Owners() {
                   </div>
                   <div className="flex items-center space-x-8">
                     <div className="text-right">
+                      <div className="text-sm text-gray-600">Teams Alive</div>
+                      <div className="text-xl font-bold text-blue-600">{owner.teamsAlive}</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm text-gray-600">Total Earnings</div>
+                      <div className="text-xl font-bold text-green-600">{formatMoney(owner.totalEarnings)}</div>
+                    </div>
+                    <div className="text-right">
                       <div className="text-sm text-gray-600">Total Purchases</div>
                       <div className="text-xl font-bold text-gray-900">{formatMoney(owner.totalPurchasePrice)}</div>
                     </div>
@@ -289,48 +326,57 @@ function Owners() {
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Region</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Seed</th>
                         <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Purchase Price</th>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Total Earnings</th>
+                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Earnings</th>
                         <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Net Profit</th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {owner.teams.map((team) => (
-                        <tr key={team.team_id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className="text-sm font-medium text-gray-900">{team.college}</span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              team.region === 'West' ? 'bg-blue-100 text-blue-800' :
-                              team.region === 'East' ? 'bg-green-100 text-green-800' :
-                              team.region === 'South' ? 'bg-yellow-100 text-yellow-800' :
-                              'bg-red-100 text-red-800'
-                            }`}>
-                              {team.region}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className="text-sm font-semibold text-gray-900">#{team.region_seed}</span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-right">
-                            <div className="flex items-center justify-end space-x-1">
-                              <DollarSign size={16} className="text-gray-400" />
-                              <span className="text-sm text-gray-900">{formatMoney(team.purchase_price)}</span>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-right">
-                            <div className="flex items-center justify-end space-x-1">
-                              <Trophy size={16} className="text-green-500" />
-                              <span className="text-sm font-medium text-green-600">{formatMoney(team.total_earnings)}</span>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-right">
-                            <span className={`text-sm font-semibold ${(team.total_earnings || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                              {formatMoney(team.total_earnings)}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
+                      {owner.teams.map((team) => {
+                        const isAlive = !games.some(game => 
+                          (game.team1_id === team.team_id || game.team2_id === team.team_id) && 
+                          game.winner_id !== null && 
+                          game.winner_id !== team.team_id
+                        );
+                        return (
+                          <tr key={team.team_id} className="hover:bg-gray-50">
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className={`text-sm font-medium text-gray-900 ${!isAlive ? 'line-through' : ''}`}>
+                                {team.college}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                team.region === 'West' ? 'bg-blue-100 text-blue-800' :
+                                team.region === 'East' ? 'bg-green-100 text-green-800' :
+                                team.region === 'South' ? 'bg-yellow-100 text-yellow-800' :
+                                'bg-red-100 text-red-800'
+                              }`}>
+                                {team.region}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className="text-sm font-semibold text-gray-900">#{team.region_seed}</span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-right">
+                              <div className="flex items-center justify-end space-x-1">
+                                <DollarSign size={16} className="text-gray-400" />
+                                <span className="text-sm text-gray-900">{formatMoney(team.purchase_price)}</span>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-right">
+                              <div className="flex items-center justify-end space-x-1">
+                                <Trophy size={16} className="text-green-500" />
+                                <span className="text-sm font-medium text-green-600">{formatMoney(team.total_earnings)}</span>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-right">
+                              <span className={`text-sm font-semibold ${(team.total_earnings - team.purchase_price) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                {formatMoney(team.total_earnings - team.purchase_price)}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
                       <tr className="bg-gray-50 font-medium">
                         <td colSpan={3} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           Total
